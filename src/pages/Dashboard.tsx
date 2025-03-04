@@ -106,7 +106,7 @@ const RecruiterDashboard: React.FC = () => {
         </Card>
 
         {/* Top Candidates */}
-        <Card title="Top Candidates" className="col-span-1">
+        {/* <Card title="Top Candidates" className="col-span-1">
           <div className="space-y-4">
             {topCandidates.map((candidate) => (
               <div key={candidate.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -141,7 +141,7 @@ const RecruiterDashboard: React.FC = () => {
             ))}
             <Button variant="outline" fullWidth>View All Candidates</Button>
           </div>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Analytics Chart Placeholder */}
