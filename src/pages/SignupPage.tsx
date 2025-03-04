@@ -4,6 +4,7 @@ import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { useGoogleLogin } from '@react-oauth/google';
 
 interface SignupPageProps {
   onSignup: () => void;
@@ -63,20 +64,71 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup }) => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      setIsLoading(true);
-      
-      // Simulate API call
-      setTimeout(() => {
+
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Something went wrong');
+        }
+
+        localStorage.setItem('token', data.token);
+        onSignup(); // Redirect or update state
+        navigate('/login');
+    } catch (error: any) {
+        setErrors({ general: error.message });
+    } finally {
         setIsLoading(false);
-        onSignup();
-        navigate('/dashboard');
-      }, 1000);
     }
   };
+
+ 
+ const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+        console.log("Google Access Token:", tokenResponse.access_token); // ✅ This is what we get
+
+        try {
+            const res = await fetch("http://localhost:5000/api/auth/google-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: tokenResponse.access_token }), // ✅ Send access token
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                localStorage.setItem("token", data.token);
+                window.location.href = "/dashboard"; // Redirect user
+            } else {
+                console.error("Authentication failed:", data.msg);
+            }
+        } catch (error) {
+            console.error("Error verifying Google login:", error);
+        }
+    },
+    onError: () => {
+        console.error("Google Sign-In failed");
+    },
+    scope: "openid email profile", // ✅ Request OpenID ID token
+    flow: "implicit", // ✅ Ensures ID token is included
+  });
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -206,7 +258,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup }) => {
                 variant="outline"
                 fullWidth
                 className="flex items-center justify-center"
-                onClick={() => {}}
+                onClick={() => handleGoogleLogin()}
               >
                 <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
                   <path
@@ -214,7 +266,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup }) => {
                     fill="currentColor"
                   />
                 </svg>
-                Sign up with Google
+                Sign in with Google
               </Button>
             </div>
           </div>
